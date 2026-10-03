@@ -1,0 +1,7 @@
+{
+  "id": "machine0",
+  "description": "Spokes: create, wake, suspend and connect paseo-machine0 VMs from the hub",
+  "requirements": {
+    "paseo": ">=0.9.2"
+  }
+}

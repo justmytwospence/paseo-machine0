@@ -399,7 +399,8 @@ def main(argv: Optional[List[str]] = None) -> int:
     args = parser().parse_args(argv)
     try:
         return int(args.fn(args) or 0)
-    except (UsageError, ValueError, RuntimeError, machine0.Machine0Error, registry.Busy, broker.BrokerError) as e:
+    except (UsageError, ValueError, RuntimeError, machine0.Machine0Error, registry.Busy, broker.BrokerError,
+            subprocess.TimeoutExpired) as e:
         if getattr(args, "json", False):
             print(json.dumps({"error": str(e)}))
         else:

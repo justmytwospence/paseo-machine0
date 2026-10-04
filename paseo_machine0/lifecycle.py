@@ -328,9 +328,11 @@ def image_build(fresh: bool) -> Dict[str, Any]:
         say("stopping %s" % config.BUILDER)
         machine0.run(["stop", config.BUILDER], timeout=600)
         wait_status(config.BUILDER, machine0.STOPPED)
+        before = set(image_versions(cfg["image"])) if have else set()
         out = machine0.run(["images", "save", config.BUILDER, cfg["image"]], timeout=3600)
-        m = re.search(r"v(\d+) \(draft\)", out)
-        version = int(m.group(1)) if m else None
+        m = re.search(r"v(\d+)\b", out)
+        added = sorted(set(image_versions(cfg["image"])) - before)
+        version = added[-1] if added else (int(m.group(1)) if m else None)
         say("snapshotting (this takes a while)")
         wait_image(cfg["image"], version)
         if version is not None:
@@ -375,6 +377,16 @@ def wait_image(image: str, version: Optional[int], timeout: float = 3600) -> Non
         if time.time() > deadline:
             raise RuntimeError("image %s still %s" % (image, state or "missing"))
         time.sleep(20)
+
+
+def image_versions(image: str) -> List[int]:
+    try:
+        versions = machine0.run_json(["images", "versions", "ls", image])
+    except machine0.Machine0Error:
+        return []
+    if isinstance(versions, dict):
+        versions = versions.get("versions") or []
+    return [int(v["version"]) for v in versions if isinstance(v, dict) and v.get("version")]
 
 
 def prune(image: str, keep: int) -> None:

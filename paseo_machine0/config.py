@@ -38,7 +38,7 @@ DEFAULTS: Dict[str, Any] = {
     "image": "paseo-machine0-spoke",
     "base_image": "ubuntu-24-04-loaded",
     "profile": "paseo-machine0",
-    "ssh_key": "paseo-machine0-hub",
+    "ssh_key": "paseo-hub",
     "spoke_user": "ubuntu",
     "idle_minutes": 120,
     "load_threshold": 0.3,

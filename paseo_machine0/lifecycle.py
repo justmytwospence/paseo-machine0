@@ -83,6 +83,10 @@ def push(name: str, bundle: Optional[Dict[str, Any]] = None) -> Dict[str, Any]:
 SYNC_SCRIPT = r"""
 set -e
 cd ~/dotfiles
+# Known writes through stowed links: machine0's GitHub integration runs
+# `gh auth setup-git` at boot (~/.gitconfig.local already sets that helper), and
+# vim-plug updates itself. Neither is a change worth keeping on a spoke.
+git checkout -q -- shell/.gitconfig shell/.vim/autoload/plug.vim 2>/dev/null || true
 git pull --rebase --autostash -q
 git submodule sync --recursive -q
 git submodule update --init --recursive -q

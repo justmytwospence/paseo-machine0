@@ -26,9 +26,11 @@ def remote(vm: str, script: str, timeout: float = 3600, check: bool = True, capt
     ~/.zshenv (PATH with nvm's node and ~/.local/bin, the role, secrets.env)."""
     inner = "bash -c " + shlex.quote(script)
     command = "zsh -c " + shlex.quote(inner) if login_env else "bash -lc " + shlex.quote(script)
+    # -n and a closed stdin: no remote program can stop at an interactive prompt.
     proc = subprocess.run(
-        config.ssh_base() + ["-o", "BatchMode=yes", "-o", "ConnectTimeout=15", vm, command],
+        config.ssh_base() + ["-o", "BatchMode=yes", "-o", "ConnectTimeout=15"] + ([] if input else ["-n"]) + [vm, command],
         timeout=timeout, capture_output=capture, input=input,
+        stdin=None if input else subprocess.DEVNULL,
     )
     if check and proc.returncode != 0:
         detail = (proc.stderr or b"").decode(errors="replace").strip()[-400:] if capture else ""

@@ -1,6 +1,7 @@
 """Paths, role and settings shared by every command.
 
-The hub and every spoke run the same checkout (dotfiles/plugins/paseo-machine0).
+The hub and every spoke run the same pinned checkout (~/.local/share/plugins/paseo-machine0,
+installed by dotfiles' `plugins sync`).
 PASEO_MACHINE0_ROLE decides what a command may do: the hub owns the machine0
 CLI, the credential broker and every secret; a spoke only runs a Paseo daemon
 and its agents, and never connects to the hub.

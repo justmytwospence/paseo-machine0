@@ -88,10 +88,9 @@ cd ~/dotfiles
 # vim-plug updates itself. Neither is a change worth keeping on a spoke.
 git checkout -q -- shell/.gitconfig shell/.vim/autoload/plug.vim 2>/dev/null || true
 git pull --rebase --autostash -q
-git submodule sync --recursive -q
-git submodule update --init --recursive -q
-(cd plugins/pi-plan-mode && npm ci --omit=dev --no-audit --no-fund --loglevel=error)
 ~/dotfiles/shell/.local/bin/dotfiles-restow shell paseo-machine0 || [ $? -eq 1 ]
+# Self-maintained plugins (this one included) at the commits dotfiles pins.
+~/dotfiles/shell/.local/bin/plugins sync
 ~/dotfiles/shell/.local/bin/skills-install >/dev/null 2>&1 || true
 # Restarts the daemon only when Paseo's version or service changed.
 ~/dotfiles/shell/.local/bin/paseo-setup >/dev/null

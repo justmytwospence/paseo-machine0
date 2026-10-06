@@ -82,14 +82,13 @@ def push(name: str, bundle: Optional[Dict[str, Any]] = None) -> Dict[str, Any]:
 
 # The dotfiles' chezmoi setup for host paseo-spoke (docs/machine0-paseo.md there),
 # run on image builds and on every spoke sync. A spoke's dotfiles checkout is
-# disposable: it is reset to origin/main (a pre-chezmoi spoke is unstowed first),
-# chezmoi is installed if missing (pinned like on every Linux host), and init
-# --apply is idempotent, so the same script serves a fresh builder, an image built
-# from the previous one, and a running spoke.
+# disposable, so it is reset and cleaned to origin/main; chezmoi is installed if
+# missing (pinned like on every Linux host); init --apply is idempotent, so the
+# same script serves a fresh builder, an image built from the previous one, and a
+# running spoke.
 DOTFILES_SCRIPT = r"""
 set -e
 test -d ~/dotfiles || git clone -q {url} ~/dotfiles
-if test -d ~/dotfiles/shell; then (cd ~/dotfiles && stow -D shell paseo-machine0 2>/dev/null) || true; fi
 git -C ~/dotfiles fetch -q origin
 git -C ~/dotfiles reset -q --hard origin/main
 git -C ~/dotfiles clean -ffdq

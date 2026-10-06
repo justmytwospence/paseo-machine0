@@ -92,6 +92,7 @@ test -d ~/dotfiles || git clone -q {url} ~/dotfiles
 if test -d ~/dotfiles/shell; then (cd ~/dotfiles && stow -D shell paseo-machine0 2>/dev/null) || true; fi
 git -C ~/dotfiles fetch -q origin
 git -C ~/dotfiles reset -q --hard origin/main
+git -C ~/dotfiles clean -ffdq
 test -x ~/.local/bin/chezmoi || sh -c "$(curl -fsLS get.chezmoi.io)" -- -b ~/.local/bin -t v2.73.0
 ~/.local/bin/chezmoi init --source ~/dotfiles --apply --force --no-tty \
     --promptChoice host=paseo-spoke --promptString extras=

@@ -206,6 +206,21 @@ class SpokeStatusTest(unittest.TestCase):
         self.assertEqual(spoke.last_activity(), 1791025200.0)
         self.assertEqual(spoke.active_schedules(), 2)
 
+    def test_session_files_count_as_activity(self):
+        # An agent Paseo does not run (started by hand over ssh) only shows in its session store.
+        d = os.path.expanduser("~/.claude/projects/-home-ubuntu-app")
+        os.makedirs(d, exist_ok=True)
+        path = os.path.join(d, "s.jsonl")
+        with open(path, "w") as f:
+            f.write("{}\n")
+        later = 1791025200.0 + 3600
+        os.utime(path, (later, later))
+        try:
+            self.assertEqual(spoke.session_activity(), later)
+            self.assertGreaterEqual(spoke.last_activity(), later)
+        finally:
+            os.unlink(path)
+
     def test_summarize(self):
         counts = spoke.summarize_agents([{"status": "running"}, {"status": "initializing"}, {"status": "idle"},
                                          {"status": "error"}, {"status": "closed"}])

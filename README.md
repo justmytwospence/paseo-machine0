@@ -58,7 +58,9 @@ hubd polls each running spoke every 5 minutes and suspends it after 120
 minutes with: no agent running or initializing, no active schedule or
 heartbeat, 15-minute load under 0.3, keep-awake off, and no permission request
 younger than 24 hours. The clock starts at the later of the first idle poll and
-the newest agent activity. A spoke that cannot be polled is never suspended.
+the newest agent activity: a Paseo agent record, or a write to any harness's
+session store (which covers an agent started by hand over ssh). A spoke that
+cannot be polled is never suspended.
 
 ## The Spokes screen
 

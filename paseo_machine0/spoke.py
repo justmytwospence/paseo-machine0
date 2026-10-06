@@ -38,9 +38,30 @@ def _iso_epoch(value: Any) -> Optional[float]:
         return None
 
 
-def last_activity(home: str = "") -> Optional[float]:
-    """Newest lastActivityAt/updatedAt across Paseo's stored agent records."""
+# Every harness's session store. Their newest write covers agents Paseo does not
+# run (one started by hand over ssh), which its agent records never show.
+SESSION_DIRS = ("~/.pi/agent/sessions", "~/.claude/projects", "~/.codex/sessions", "~/.local/share/opencode/storage")
+
+
+def session_activity() -> Optional[float]:
+    """mtime of the newest file under the harnesses' session stores, if any."""
     newest = None
+    for root in SESSION_DIRS:
+        for dirpath, _dirs, files in os.walk(os.path.expanduser(root)):
+            for name in files:
+                try:
+                    t = os.stat(os.path.join(dirpath, name)).st_mtime
+                except OSError:
+                    continue
+                if newest is None or t > newest:
+                    newest = t
+    return newest
+
+
+def last_activity(home: str = "") -> Optional[float]:
+    """Newest lastActivityAt/updatedAt across Paseo's stored agent records, or the
+    newest session file write when that is later."""
+    newest = session_activity()
     for path in glob.glob(os.path.join(home or config.PASEO_HOME, "agents", "*", "*.json")):
         record = config.read_json(path, {}) or {}
         for key in ("lastActivityAt", "updatedAt"):

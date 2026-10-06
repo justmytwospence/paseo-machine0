@@ -98,8 +98,9 @@ test -x ~/.local/bin/chezmoi || sh -c "$(curl -fsLS get.chezmoi.io)" -- -b ~/.lo
     --promptChoice host=paseo-spoke --promptString extras=
 """
 
-# Restarts the daemon only when Paseo's version or service changed.
-SYNC_SCRIPT = DOTFILES_SCRIPT + "~/.local/bin/paseo-setup >/dev/null\n"
+# Restarts the daemon only when Paseo's version or service changed. Through zsh, whose
+# ~/.zshenv (now chezmoi's) puts nvm's node on PATH for paseo-setup's npm.
+SYNC_SCRIPT = DOTFILES_SCRIPT + "zsh -c '~/.local/bin/paseo-setup >/dev/null'\n"
 
 
 def sync(name: str) -> None:

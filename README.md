@@ -26,7 +26,7 @@ Spokes never connect to the hub: everything flows from the hub over ssh.
 | `ls [--cached]` | Spokes with state, cost, agents, pending permissions, idle time |
 | `pair-link <name> [--refresh]` | The spoke's pairing link (and `paseo://` form and QR) |
 | `ssh <name> [cmd]`, `sync <name>\|--running`, `push-creds <name>\|--running` | Maintenance |
-| `image build [--fresh]` | Build `paseo-machine0-spoke`: bootstrap a builder, stop Paseo, scrub identities and credentials, snapshot, promote, keep two versions |
+| `image build [--fresh]` | Build `paseo-machine0-spoke`: bootstrap a builder, stop Paseo, scrub identities and credentials, snapshot, promote (machine0 retires the previous version) |
 | `secrets set KEY\|login\|show`, `hub-status`, `hubd [--once]` | Hub secrets, broker logins, health, the daemon |
 
 `paseo-machine0 spoke init|apply-creds|status|work|restart-paseo` run on spokes;

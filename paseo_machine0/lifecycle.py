@@ -332,9 +332,13 @@ def image_build(fresh: bool) -> Dict[str, Any]:
         version = added[-1] if added else (int(m.group(1)) if m else None)
         say("snapshotting (this takes a while)")
         wait_image(cfg["image"], version)
-        if version is not None:
-            machine0.run(["images", "versions", "promote", cfg["image"], str(version)])
-            prune(cfg["image"], keep=2)
+        if version is None:
+            # Never report success with the old version still live.
+            raise RuntimeError("could not tell which version the snapshot created; promote it with "
+                               "`machine0 images versions promote %s <n>`" % cfg["image"])
+        # Promoting retires the previous version. machine0 only deletes drafts,
+        # so retired versions are its to manage.
+        machine0.run(["images", "versions", "promote", cfg["image"], str(version)])
         say("image %s ready" % cfg["image"])
     finally:
         machine0.destroy(config.BUILDER)
@@ -384,20 +388,3 @@ def image_versions(image: str) -> List[int]:
     if isinstance(versions, dict):
         versions = versions.get("versions") or []
     return [int(v["version"]) for v in versions if isinstance(v, dict) and v.get("version")]
-
-
-def prune(image: str, keep: int) -> None:
-    try:
-        versions = machine0.run_json(["images", "versions", "ls", image])
-    except machine0.Machine0Error as e:
-        say("could not list versions of %s: %s" % (image, e))
-        return
-    if isinstance(versions, dict):
-        versions = versions.get("versions") or []
-    numbers = sorted((int(v.get("version")) for v in versions if isinstance(v, dict) and v.get("version")),
-                     reverse=True)
-    for n in numbers[keep:]:
-        try:
-            machine0.run(["images", "versions", "rm", image, str(n), "-y"])
-        except machine0.Machine0Error as e:
-            say("could not remove %s v%d: %s" % (image, n, e))

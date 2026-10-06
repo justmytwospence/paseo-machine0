@@ -357,7 +357,7 @@ def parser() -> argparse.ArgumentParser:
     s.add_argument("name")
     s.add_argument("command", nargs=argparse.REMAINDER)
 
-    s = add("sync", cmd_sync, "pull dotfiles, restow and update Paseo on spokes", json_flag=False)
+    s = add("sync", cmd_sync, "chezmoi update the dotfiles and update Paseo on spokes", json_flag=False)
     s.add_argument("name", nargs="?")
     s.add_argument("--running", action="store_true")
 

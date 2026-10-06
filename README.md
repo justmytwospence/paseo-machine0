@@ -76,8 +76,8 @@ desktop, Copy link then Add host, Paste pairing link, or show the QR.
 `permission_grace_hours`, `push_interval_hours`, `brokered_providers`,
 `refresh_margin_h`.
 
-Setup, rollout and phone pairing are in the dotfiles README ("Paseo spokes on
-machine0"); open questions verified on real VMs are in `docs/spike.md`.
+Setup, rollout and phone pairing are in the dotfiles' `docs/machine0-paseo.md`;
+spokes run its chezmoi setup as host `paseo-spoke`. Open questions verified on real VMs are in `docs/spike.md`.
 
 ## Tests
 

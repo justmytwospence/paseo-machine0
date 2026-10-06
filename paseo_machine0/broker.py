@@ -15,7 +15,7 @@ from . import config
 
 PI_PACKAGE = "@earendil-works/pi-coding-agent"
 # A private SDK copy for hosts whose pi is a compiled binary with no JavaScript
-# inside (exe.dev's exeuntu build); bootstrap-paseo-machine0 installs it on the hub.
+# inside (exe.dev's exeuntu build); the dotfiles' chezmoi setup installs it on the hub.
 SDK_DIR = os.path.expanduser("~/.local/share/paseo-machine0/pi-sdk/node_modules/" + PI_PACKAGE)
 
 

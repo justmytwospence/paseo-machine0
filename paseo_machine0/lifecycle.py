@@ -82,18 +82,13 @@ def push(name: str, bundle: Optional[Dict[str, Any]] = None) -> Dict[str, Any]:
 
 SYNC_SCRIPT = r"""
 set -e
-cd ~/dotfiles
-# Known writes through stowed links: machine0's GitHub integration runs
-# `gh auth setup-git` at boot (~/.gitconfig.local already sets that helper), and
-# vim-plug updates itself. Neither is a change worth keeping on a spoke.
-git checkout -q -- shell/.gitconfig shell/.vim/autoload/plug.vim 2>/dev/null || true
-git pull --rebase --autostash -q
-~/dotfiles/shell/.local/bin/dotfiles-restow shell paseo-machine0 || [ $? -eq 1 ]
-# Self-maintained plugins (this one included) at the commits dotfiles pins.
-~/dotfiles/shell/.local/bin/plugins sync
-~/dotfiles/shell/.local/bin/skills-install >/dev/null 2>&1 || true
+# chezmoi update: git pull, then apply. Spokes take the repo's state, so --force
+# overwrites a target changed on the spoke (machine0's GitHub integration runs
+# `gh auth setup-git` at boot); the plugin and skill syncs run when their inputs
+# changed.
+~/.local/bin/chezmoi update --force --no-tty
 # Restarts the daemon only when Paseo's version or service changed.
-~/dotfiles/shell/.local/bin/paseo-setup >/dev/null
+~/.local/bin/paseo-setup >/dev/null
 """
 
 
@@ -102,10 +97,16 @@ def sync(name: str) -> None:
     remote(config.vm_name(name), SYNC_SCRIPT, timeout=1800)
 
 
+# The dotfiles' chezmoi setup for host paseo-spoke (docs/machine0-paseo.md there):
+# packages, harnesses, Paseo, hook stand-ins. Idempotent, so it also refreshes an
+# image built from the previous one. chezmoi is pinned like on every Linux host.
 BOOTSTRAP_SCRIPT = r"""
 set -e
 test -d ~/dotfiles || git clone -q {url} ~/dotfiles
-~/dotfiles/paseo-machine0/bin/bootstrap-paseo-machine0 --role spoke --host machine0
+git -C ~/dotfiles pull --rebase --autostash -q
+test -x ~/.local/bin/chezmoi || sh -c "$(curl -fsLS get.chezmoi.io)" -- -b ~/.local/bin -t v2.73.0
+~/.local/bin/chezmoi init --source ~/dotfiles --apply --force --no-tty \
+    --promptChoice host=paseo-spoke --promptString extras=
 """
 
 
@@ -319,12 +320,7 @@ def image_build(fresh: bool) -> Dict[str, Any]:
     version = None
     try:
         bring_up(config.BUILDER)
-        if base == cfg["base_image"]:
-            bootstrap(config.BUILDER)
-        else:
-            remote(config.BUILDER, "cd ~/dotfiles && git pull --rebase --autostash -q", timeout=600)
-            remote(config.BUILDER, "~/dotfiles/paseo-machine0/bin/bootstrap-paseo-machine0 --role spoke --host machine0",
-                   timeout=7200)
+        bootstrap(config.BUILDER)
         remote(config.BUILDER, SCRUB_SCRIPT, timeout=300)
         # machine0 only snapshots a stopped instance, and `images save` returns
         # before the snapshot exists, so stop first and wait for it after.

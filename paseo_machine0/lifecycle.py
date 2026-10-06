@@ -80,39 +80,36 @@ def push(name: str, bundle: Optional[Dict[str, Any]] = None) -> Dict[str, Any]:
 
 # ---- dotfiles -----------------------------------------------------------------
 
-SYNC_SCRIPT = r"""
-set -e
-# chezmoi update: git pull, then apply. Spokes take the repo's state, so --force
-# overwrites a target changed on the spoke (machine0's GitHub integration runs
-# `gh auth setup-git` at boot); the plugin and skill syncs run when their inputs
-# changed.
-~/.local/bin/chezmoi update --force --no-tty
-# Restarts the daemon only when Paseo's version or service changed.
-~/.local/bin/paseo-setup >/dev/null
-"""
-
-
-def sync(name: str) -> None:
-    say("syncing dotfiles and Paseo on %s" % name)
-    remote(config.vm_name(name), SYNC_SCRIPT, timeout=1800)
-
-
-# The dotfiles' chezmoi setup for host paseo-spoke (docs/machine0-paseo.md there):
-# packages, harnesses, Paseo, hook stand-ins. Idempotent, so it also refreshes an
-# image built from the previous one. chezmoi is pinned like on every Linux host.
-BOOTSTRAP_SCRIPT = r"""
+# The dotfiles' chezmoi setup for host paseo-spoke (docs/machine0-paseo.md there),
+# run on image builds and on every spoke sync. A spoke's dotfiles checkout is
+# disposable: it is reset to origin/main (a pre-chezmoi spoke is unstowed first),
+# chezmoi is installed if missing (pinned like on every Linux host), and init
+# --apply is idempotent, so the same script serves a fresh builder, an image built
+# from the previous one, and a running spoke.
+DOTFILES_SCRIPT = r"""
 set -e
 test -d ~/dotfiles || git clone -q {url} ~/dotfiles
-git -C ~/dotfiles pull --rebase --autostash -q
+if test -d ~/dotfiles/shell; then (cd ~/dotfiles && stow -D shell paseo-machine0 2>/dev/null) || true; fi
+git -C ~/dotfiles fetch -q origin
+git -C ~/dotfiles reset -q --hard origin/main
 test -x ~/.local/bin/chezmoi || sh -c "$(curl -fsLS get.chezmoi.io)" -- -b ~/.local/bin -t v2.73.0
 ~/.local/bin/chezmoi init --source ~/dotfiles --apply --force --no-tty \
     --promptChoice host=paseo-spoke --promptString extras=
 """
 
+# Restarts the daemon only when Paseo's version or service changed.
+SYNC_SCRIPT = DOTFILES_SCRIPT + "~/.local/bin/paseo-setup >/dev/null\n"
+
+
+def sync(name: str) -> None:
+    say("syncing dotfiles and Paseo on %s" % name)
+    remote(config.vm_name(name), SYNC_SCRIPT.format(url=shlex.quote(config.settings()["dotfiles_url"])),
+           timeout=1800)
+
 
 def bootstrap(vm: str) -> None:
     say("bootstrapping %s (this takes a while)" % vm)
-    remote(vm, BOOTSTRAP_SCRIPT.format(url=shlex.quote(config.settings()["dotfiles_url"])),
+    remote(vm, DOTFILES_SCRIPT.format(url=shlex.quote(config.settings()["dotfiles_url"])),
            timeout=7200, login_env=False)
 
 

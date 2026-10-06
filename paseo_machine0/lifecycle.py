@@ -122,10 +122,35 @@ def clone(name: str, repos: List[str]) -> List[str]:
         if short.endswith(".git"):
             short = short[:-4]
         dest = "$HOME/Projects/%s" % short
+        # A full URL, so the plain `git clone` fallback works for owner/repo too.
+        url = repo if "://" in repo or repo.startswith("git@") else "https://github.com/%s.git" % repo
         remote(vm, 'mkdir -p ~/Projects && (test -d "{d}" || gh repo clone {u} "{d}" -- -q || git clone -q {u} "{d}") '
-                   '&& paseo project create "{d}" >/dev/null'.format(d=dest, u=shlex.quote(repo)), timeout=1800)
+                   '&& paseo project create "{d}" >/dev/null'.format(d=dest, u=shlex.quote(url)), timeout=1800)
         paths.append("~/Projects/%s" % short)
     return paths
+
+
+CLOUD_INIT_WAIT = r"""
+if command -v cloud-init >/dev/null; then
+  timeout 420 sudo cloud-init status --wait >/dev/null 2>&1
+  case $? in
+    0|2) echo done ;;      # 2: finished with recoverable errors
+    124) echo timeout ;;
+    *) echo error ;;
+  esac
+else
+  echo none
+fi
+"""
+
+
+def settle_cloud_init(vm: str) -> None:
+    """machine0 injects the profile (gh's GitHub login, env) through cloud-init;
+    clone nothing before it is done."""
+    proc = remote(vm, CLOUD_INIT_WAIT, timeout=480, check=False, capture=True, login_env=False)
+    state = (proc.stdout or b"").decode().strip().splitlines()[-1:] or ["?"]
+    if state[0] == "timeout":
+        say("cloud-init on %s did not finish within 7 minutes; continuing" % vm)
 
 
 # ---- pairing ------------------------------------------------------------------
@@ -191,6 +216,7 @@ def new(name: str, size: Optional[str], repos: List[str]) -> Dict[str, Any]:
                 registry.drop(name)
             raise
         bring_up(vm)
+        settle_cloud_init(vm)
         if gpu:
             bootstrap(vm)
         say("naming the host")
@@ -292,6 +318,16 @@ def rm(name: str, force: bool) -> Dict[str, Any]:
 
 SCRUB_SCRIPT = r"""
 set -e
+# A snapshot taken mid-install leaves dpkg "interrupted" in every clone, and
+# DigitalOcean's first-boot agent install then retries forever, so cloud-init
+# never finishes (and machine0's profile, gh's login, never lands). Stop the
+# periodic apt jobs, let any running one finish, and repair.
+sudo systemctl stop apt-daily.timer apt-daily-upgrade.timer 2>/dev/null || true
+sudo systemctl stop apt-daily.service apt-daily-upgrade.service unattended-upgrades.service 2>/dev/null || true
+while sudo fuser /var/lib/dpkg/lock-frontend /var/lib/dpkg/lock >/dev/null 2>&1; do sleep 3; done
+sudo dpkg --configure -a
+sudo apt-get -o DPkg::Lock::Timeout=600 -qq -f install -y >/dev/null
+sync
 systemctl --user stop paseo.service 2>/dev/null || true
 rm -f ~/.paseo/daemon-keypair.json ~/.paseo/server-id ~/.paseo/push-tokens.json ~/.paseo/local-credential \
       ~/.paseo/cli-client-id ~/.paseo/paseo.pid ~/.paseo/daemon.log* ~/.paseo/*-daemon.log

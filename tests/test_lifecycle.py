@@ -57,13 +57,14 @@ class NewTest(unittest.TestCase):
         with mock.patch.object(machine0, "get", return_value=None), \
                 mock.patch.object(machine0, "new", r.hook("machine0.new")), \
                 mock.patch.object(lifecycle, "bring_up", r.hook("bring_up")), \
+                mock.patch.object(lifecycle, "settle_cloud_init", r.hook("settle_cloud_init")), \
                 mock.patch.object(lifecycle, "remote", side_effect=lambda vm, script, **kw: remotes.append(script)), \
                 mock.patch.object(lifecycle, "push", r.hook("push")), \
                 mock.patch.object(lifecycle, "sync", r.hook("sync")), \
                 mock.patch.object(lifecycle, "clone", return_value=["~/Projects/app"]), \
                 mock.patch.object(lifecycle, "fetch_pair_url", return_value="https://app.paseo.sh/#offer=x"):
             out = lifecycle.new("fresh", None, ["me/app"])
-        self.assertEqual(r.calls, ["machine0.new", "bring_up", "push", "sync"])
+        self.assertEqual(r.calls, ["machine0.new", "bring_up", "settle_cloud_init", "push", "sync"])
         self.assertEqual(remotes, ["paseo-machine0 spoke init paseo-fresh", "paseo-machine0 spoke restart-paseo"])
         self.assertEqual(out["vm"], "paseo-fresh")
         self.assertEqual(registry.get("fresh")["size"], "large")

@@ -1,5 +1,10 @@
 # paseo-machine0
 
+> **Retired (2026-10).** No longer deployed: the author's setup moved to a Paseo daemon on a
+> homelab server for phone chat, and [AgentBox](https://github.com/madarco/agentbox) with
+> [herdr-agentbox](https://github.com/justmytwospence/herdr-agentbox) for isolated per-task
+> boxes. The code still works as last tested.
+
 Per-project [Paseo](https://paseo.sh) spokes on [machine0](https://machine0.io)
 VMs, run from one always-on hub.
 
